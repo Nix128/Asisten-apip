@@ -690,3 +690,83 @@ body {
     border-color: var(--accent-color);
     box-shadow: 0 0 0 3px rgba(42, 111, 219, 0.2);
 }
+
+@media (max-width: 1024px) {
+  html {
+    font-size: 15px;
+  }
+
+  .chat-window {
+    padding: 1rem;
+    gap: 1rem;
+  }
+
+  .bubble {
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+
+  .chat-footer {
+    padding: 0.75rem 1rem;
+    height: auto;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .chat-form {
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  #user-input {
+    width: 100%;
+  }
+
+  .sidebar {
+    width: 100%;
+    height: auto;
+    position: relative;
+    transform: none;
+    box-shadow: none;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .app-container {
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .app-container.sidebar-collapsed .sidebar {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  html {
+    font-size: 14px;
+  }
+
+  .chat-window {
+    padding: 1rem 0.75rem;
+  }
+
+  .bubble {
+    font-size: 0.9rem;
+  }
+
+  .download-btn {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.75rem;
+  }
+
+  .modal-content {
+    padding: 1rem;
+  }
+
+  .chat-header,
+  .chat-footer {
+    padding: 0.5rem 1rem;
+  }
+}
