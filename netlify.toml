@@ -4,7 +4,10 @@
   publish = "public"
 
 [functions]
-  # Increase the timeout for all functions to 26 seconds (generous for free tier)
+  # No global timeout setting here
+
+# Use a wildcard to apply settings to all functions
+[functions."*"]
   timeout = 26
 
 [[redirects]]
