@@ -1,25 +1,16 @@
 require('dotenv').config();
 const express = require('express');
 const path = require('path');
-const session = require('express-session');
-const FileStore = require('session-file-store')(session);
+const cookieSession = require('cookie-session');
 const app = express();
 
 // SESSION MIDDLEWARE
-const fileStoreOptions = {
-  path: './memory/sessions', // Store sessions in a dedicated folder
-  reapInterval: 3600, // Clean up expired sessions every hour
-};
-
-app.use(session({
-  store: new FileStore(fileStoreOptions),
-  secret: process.env.SESSION_SECRET || 'keyboard cat',
-  resave: false,
-  saveUninitialized: true, // Set to true to save new sessions with chat history
-  cookie: { 
-    secure: false, // Set to true if using HTTPS
-    maxAge: 1000 * 60 * 60 * 24 * 7 // 1 week
-  }
+app.use(cookieSession({
+  name: 'session',
+  keys: [process.env.SESSION_SECRET || 'a-very-secret-key-that-is-long-enough'],
+  // Cookie Options
+  maxAge: 24 * 60 * 60 * 1000 * 7, // 7 days
+  httpOnly: true,
 }));
 
 // ROUTES
