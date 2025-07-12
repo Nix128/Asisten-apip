@@ -133,7 +133,7 @@ dist
 .breakpoints
 
 # Application-specific ignores
-/memory/
-/uploads/
-!/memory/.gitkeep
-!/uploads/.gitkeep
+/src/memory/
+/src/uploads/
+!/src/memory/.gitkeep
+!/src/uploads/.gitkeep
