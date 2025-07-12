@@ -12,7 +12,8 @@ const { upsertKnowledge } = require('../utils/knowledge');
 
 const router = express.Router();
 
-const upload = multer({ dest: 'uploads/' });
+// Use memory storage to handle files in a serverless environment
+const upload = multer({ storage: multer.memoryStorage() });
 
 router.post('/', upload.single('file'), async (req, res) => {
   const file = req.file;
@@ -21,30 +22,30 @@ router.post('/', upload.single('file'), async (req, res) => {
   }
 
   const ext = path.extname(file.originalname).toLowerCase();
-  const filePath = path.resolve(file.path);
+  const buffer = file.buffer; // File is in memory, not on disk
 
   try {
     let content = '';
 
     if (ext === '.docx') {
-      const buffer = fs.readFileSync(filePath);
       content = await readDocx(buffer);
     } else if (ext === '.pdf') {
-      const buffer = fs.readFileSync(filePath);
       content = await readPDF(buffer);
     } else if (ext === '.txt') {
-      const buffer = fs.readFileSync(filePath);
       content = await readTxt(buffer);
     } else if (ext === '.xlsx') {
-      const buffer = fs.readFileSync(filePath);
       content = await readExcel(buffer);
     } else if (ext === '.zip') {
-      content = await extractZip(filePath);
+      // This is tricky, unzipper works with streams/paths. We need to write to a temp dir.
+      // The /tmp/ directory is writable in most serverless environments.
+      const tempDir = '/tmp';
+      const tempFilePath = path.join(tempDir, file.originalname);
+      await fs.promises.writeFile(tempFilePath, buffer);
+      content = await extractZip(tempFilePath);
+      await fs.promises.unlink(tempFilePath); // Clean up the temp file
     } else {
       return res.status(400).json({ success: false, error: 'Format file tidak didukung.' });
     }
-
-    fs.unlinkSync(filePath); // Hapus file setelah diproses
 
     // Initialize context as an array if it doesn't exist
     if (!Array.isArray(req.session.fileContext)) {

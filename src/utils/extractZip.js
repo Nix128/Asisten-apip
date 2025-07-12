@@ -21,11 +21,14 @@ async function extractZip(zipPath) {
   for (const fileName of files) {
     const filePath = path.join(extractedDir, fileName);
     const ext = path.extname(fileName).toLowerCase();
+    const fileBuffer = fs.readFileSync(filePath);
 
-    if (ext === '.pdf') result += await readPDF(filePath);
-    else if (ext === '.docx') result += await readDocx(filePath);
-    else if (ext === '.txt') result += await readTxt(filePath);
-    else if (ext === '.xlsx') result += await readExcel(filePath);
+    result += `\n\n--- DOKUMEN DARI ZIP: ${fileName} ---\n\n`;
+
+    if (ext === '.pdf') result += await readPDF(fileBuffer);
+    else if (ext === '.docx') result += await readDocx(fileBuffer);
+    else if (ext === '.txt') result += await readTxt(fileBuffer);
+    else if (ext === '.xlsx') result += await readExcel(fileBuffer);
   }
 
   return result;
