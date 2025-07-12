@@ -86,15 +86,15 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="knowledge-item-footer">
           <span class="knowledge-item-date">Dibuat pada: ${date}</span>
           <div class="knowledge-item-actions">
-            <button class="edit-btn" data-id="${item.id}" title="Ubah"><i class="fa-solid fa-pen-to-square"></i></button>
-            <button class="delete-btn" data-id="${item.id}" title="Hapus"><i class="fa-solid fa-trash"></i></button>
+            <button class="edit-btn" data-id="${item._id}" title="Ubah"><i class="fa-solid fa-pen-to-square"></i></button>
+            <button class="delete-btn" data-id="${item._id}" title="Hapus"><i class="fa-solid fa-trash"></i></button>
           </div>
         </div>
       `;
 
       // Add event listeners for edit and delete buttons
       itemDiv.querySelector('.edit-btn').addEventListener('click', () => openModalForEdit(item));
-      itemDiv.querySelector('.delete-btn').addEventListener('click', () => deleteKnowledge(item.id));
+      itemDiv.querySelector('.delete-btn').addEventListener('click', () => deleteKnowledge(item._id));
 
       knowledgeListContainer.appendChild(itemDiv);
     });
@@ -103,7 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- MODAL & FORM HANDLING ---
   const openModalForEdit = (item) => {
     modalTitle.textContent = 'Ubah Pengetahuan';
-    knowledgeIdInput.value = item.id;
+    knowledgeIdInput.value = item._id;
     knowledgeTopicInput.value = item.topic;
     knowledgeContentInput.value = item.text;
     modal.style.display = 'flex';
