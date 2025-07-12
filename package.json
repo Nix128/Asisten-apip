@@ -10,7 +10,6 @@
     "adm-zip": "^0.5.10",
     "axios": "^1.6.7",
     "cheerio": "^1.0.0-rc.12",
-    "cookie-session": "^2.1.0",
     "cors": "^2.8.5",
     "docx": "^9.5.1",
     "dotenv": "^16.6.1",
