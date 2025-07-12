@@ -46,6 +46,10 @@ app.get('/', (req, res) => {
 
 // SERVER
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-  console.log(`✅ Sahabat APIP siap membantu di http://localhost:${PORT}`);
-});
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`✅ Sahabat APIP siap membantu di http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;
