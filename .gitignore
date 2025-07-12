@@ -131,3 +131,9 @@ dist
 
 # Replit debugger
 .breakpoints
+
+# Application-specific ignores
+/memory/
+/uploads/
+!/memory/.gitkeep
+!/uploads/.gitkeep
