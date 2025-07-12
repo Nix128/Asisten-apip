@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Manajemen Basis Pengetahuan - Sahabat APIP</title>
+  <link rel="stylesheet" href="style.css" />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+  />
+</head>
+<body>
+  <div class="app-container">
+    
+    <!-- SIDEBAR -->
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-header">
+        <a href="/" class="home-link-btn">
+          <i class="fa-solid fa-chevron-left"></i> Kembali ke Chat
+        </a>
+      </div>
+      <div class="history-container">
+        <h2 class="history-header">Tindakan</h2>
+        <button id="add-knowledge-btn" class="btn-primary full-width">
+            <i class="fa-solid fa-plus"></i> Tambah Pengetahuan
+        </button>
+      </div>
+      <div class="sidebar-footer">
+        <!-- Settings button is not needed on this page -->
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-chat">
+      <header class="chat-header">
+        <h1>Manajemen Basis Pengetahuan</h1>
+        <div class="header-actions">
+            <input type="text" id="search-input" placeholder="Cari berdasarkan topik...">
+        </div>
+      </header>
+
+      <div id="knowledge-list-container" class="chat-window">
+        <!-- Knowledge base items will be rendered here by JavaScript -->
+        <p class="empty-history">Memuat data...</p>
+      </div>
+    </main>
+  </div>
+
+  <!-- Add/Edit Modal -->
+  <div id="knowledge-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+      <h2 id="modal-title">Tambah Pengetahuan Baru</h2>
+      <form id="knowledge-form">
+        <input type="hidden" id="knowledge-id">
+        <div class="form-group">
+          <label for="knowledge-topic">Topik atau Judul Peraturan</label>
+          <input type="text" id="knowledge-topic" required>
+        </div>
+        <div class="form-group">
+          <label for="knowledge-content">Konten atau Isi</label>
+          <textarea id="knowledge-content" rows="10" required></textarea>
+        </div>
+        <div class="modal-actions">
+          <button type="submit" class="btn-primary">Simpan</button>
+          <button type="button" id="close-modal-btn" class="btn-secondary">Batal</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="knowledge.js"></script>
+</body>
+</html>

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sahabat APIP</title>
+  <link rel="stylesheet" href="style.css" />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+  />
+</head>
+<body>
+  <div class="app-container">
+    
+    <!-- SIDEBAR -->
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-header">
+        <button id="new-chat-btn">
+          <i class="fa-solid fa-plus"></i> Percakapan Baru
+        </button>
+      </div>
+      <div class="history-container">
+        <h2 class="history-header">Riwayat Obrolan</h2>
+        <div id="history-list" class="history-list">
+          <!-- Riwayat akan dirender oleh JavaScript -->
+        </div>
+      </div>
+      <div class="sidebar-footer">
+        <a href="/knowledge.html" class="sidebar-action-btn">
+          <i class="fa-solid fa-database"></i>
+          <span>Basis Pengetahuan</span>
+        </a>
+        <button id="settings-btn" class="sidebar-action-btn">
+          <i class="fa-solid fa-cog"></i>
+          <span>Pengaturan</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- CHAT AREA -->
+    <main class="main-chat">
+      <header class="chat-header">
+        <button id="menu-btn" class="menu-btn">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+        <div class="header-actions">
+          <button id="theme-toggle-btn" class="theme-toggle-btn" title="Ganti Tema">
+            <i class="fa-solid fa-sun"></i>
+          </button>
+        </div>
+      </header>
+
+      <div id="chat-window" class="chat-window">
+        <!-- Pesan akan muncul di sini -->
+      </div>
+
+      <div id="typing-indicator" class="typing-indicator" style="display: none;">
+        <span>Sahabat APIP sedang menganalisis</span>
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+      </div>
+
+      <footer class="chat-footer">
+        <form id="chat-form" class="chat-form">
+          <label for="file-upload" class="upload-label" title="Unggah Dokumen">
+            <i class="fa-solid fa-paperclip"></i>
+          </label>
+          <input type="file" id="file-upload" hidden />
+          <input type="text" id="user-input" placeholder="Menunggu inisialisasi..." autocomplete="off" disabled />
+          <button type="submit" title="Kirim" id="send-btn" disabled>
+            <i class="fa-solid fa-paper-plane"></i>
+          </button>
+        </form>
+      </footer>
+    </main>
+  </div>
+
+  <!-- SCRIPT EKSTERNAL -->
+  <script src="ui.js"></script>
+
+  <!-- Settings Modal -->
+  <div id="settings-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+      <h2>Pengaturan API</h2>
+      <p>Masukkan kunci API Anda di bawah ini. Kunci akan disimpan di browser Anda.</p>
+      <div class="form-group">
+        <label for="gemini-api-key">Gemini API Key</label>
+        <input type="password" id="gemini-api-key" placeholder="Masukkan Gemini API Key">
+      </div>
+      <div class="form-group">
+        <label for="google-api-key">Google Search API Key</label>
+        <input type="password" id="google-api-key" placeholder="Masukkan Google API Key">
+      </div>
+      <div class="form-group">
+        <label for="google-cse-id">Google Search Engine ID</label>
+        <input type="text" id="google-cse-id" placeholder="Masukkan Google CSE ID">
+      </div>
+      <div class="modal-actions">
+        <button id="save-settings-btn" class="btn-primary">Simpan</button>
+        <button id="close-settings-btn" class="btn-secondary">Tutup</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
