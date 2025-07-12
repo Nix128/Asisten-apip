@@ -451,6 +451,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const loadInitialData = async () => {
     try {
       const response = await fetch('/api/chat/sessions');
+      if (!response.ok) {
+        throw new Error(`Server responded with status: ${response.status}`);
+      }
       const data = await response.json();
       chats = data.chats;
       currentChatId = data.currentChatId;
