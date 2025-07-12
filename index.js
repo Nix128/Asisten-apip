@@ -19,10 +19,7 @@ app.use(session({
 }));
 
 // ROUTES
-const analyzeRoutes = require('./routes/analyze');
-const chatRoutes = require('./routes/chat');
-const generateRoutes = require('./routes/generate');
-const knowledgeRoutes = require('./routes/knowledge');
+const apiRoutes = require('./routes/index');
 
 // MIDDLEWARE
 app.use(express.json());
@@ -30,10 +27,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // API ROUTES
-app.use('/api/analyze', analyzeRoutes);
-app.use('/api/chat', chatRoutes);
-app.use('/api/generate', generateRoutes);
-app.use('/api/knowledge', knowledgeRoutes);
+app.use('/api', apiRoutes);
 
 // FALLBACK: UI
 app.get('/', (req, res) => {
