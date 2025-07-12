@@ -28,7 +28,7 @@ router.get("/sessions", (req, res) => {
 
 // POST a new message to the current chat
 router.post("/", async (req, res) => {
-  const { message, apiKeys } = req.body;
+  const { message } = req.body;
   const { currentChatId, chats, fileContext } = req.session;
 
   if (!message) {
@@ -89,7 +89,7 @@ router.post("/", async (req, res) => {
 
     // --- Agentic Loop for APIP ---
     console.log("Asking model to decide on a tool for APIP analysis...");
-    const firstResponse = await sendToGemini(currentChat.history, fileContext, apiKeys, tools);
+    const firstResponse = await sendToGemini(currentChat.history, fileContext, tools);
 
     if (firstResponse.error) {
       return res.status(500).json({ response: firstResponse.error });
@@ -126,7 +126,7 @@ router.post("/", async (req, res) => {
       } else if (functionName === 'search_google') {
         const quotaStatus = await checkAndIncrementQuota();
         if (quotaStatus.canSearch) {
-          toolResultContent = await searchGoogle(functionArgs.query, apiKeys);
+          toolResultContent = await searchGoogle(functionArgs.query);
           toolResultContent += `\n\n(Sisa kuota pencarian hari ini: ${quotaStatus.remaining})`;
         } else {
           toolResultContent = "Kuota pencarian Google harian (100) telah tercapai. Fungsi pencarian akan tersedia kembali besok.";
@@ -155,7 +155,7 @@ router.post("/", async (req, res) => {
       currentChat.history.push(toolResult);
 
       console.log("Sending tool result back to model for final synthesis...");
-      const secondResponse = await sendToGemini(currentChat.history, fileContext, apiKeys);
+      const secondResponse = await sendToGemini(currentChat.history, fileContext);
       finalResponse = secondResponse.content?.parts?.[0]?.text || "Maaf, terjadi kesalahan saat mensintesis hasil analisis.";
 
     } else {

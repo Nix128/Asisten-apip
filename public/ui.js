@@ -13,13 +13,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const newChatBtn = document.getElementById('new-chat-btn');
   const historyList = document.getElementById('history-list');
   const mainChat = document.querySelector('.main-chat');
-  const settingsBtn = document.getElementById('settings-btn');
-  const settingsModal = document.getElementById('settings-modal');
-  const saveSettingsBtn = document.getElementById('save-settings-btn');
-  const closeSettingsBtn = document.getElementById('close-settings-btn');
-  const geminiApiKeyInput = document.getElementById('gemini-api-key');
-  const googleApiKeyInput = document.getElementById('google-api-key');
-  const googleCseIdInput = document.getElementById('google-cse-id');
 
   // --- STATE MANAGEMENT ---
   let chats = {};
@@ -40,26 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const savedTheme = localStorage.getItem('apip_theme') || 'light';
   applyTheme(savedTheme);
 
-  // --- SETTINGS MODAL MANAGEMENT ---
-  const showSettingsModal = (show) => {
-    settingsModal.style.display = show ? 'flex' : 'none';
-  };
-
-  settingsBtn.addEventListener('click', () => showSettingsModal(true));
-  closeSettingsBtn.addEventListener('click', () => showSettingsModal(false));
-  saveSettingsBtn.addEventListener('click', () => {
-    localStorage.setItem('gemini_api_key', geminiApiKeyInput.value);
-    localStorage.setItem('google_api_key', googleApiKeyInput.value);
-    localStorage.setItem('google_cse_id', googleCseIdInput.value);
-    showSettingsModal(false);
-    // Optionally, add a notification for the user that settings are saved
-  });
-
-  const loadSettings = () => {
-    geminiApiKeyInput.value = localStorage.getItem('gemini_api_key') || '';
-    googleApiKeyInput.value = localStorage.getItem('google_api_key') || '';
-    googleCseIdInput.value = localStorage.getItem('google_cse_id') || '';
-  };
+  // Settings modal has been removed as keys are now server-side.
 
   const setChatInputDisabled = (disabled) => {
     userInput.disabled = disabled;
@@ -348,12 +322,6 @@ document.addEventListener('DOMContentLoaded', () => {
     typingIndicator.style.display = isTyping ? 'flex' : 'none';
   };
 
-  const getApiKeys = () => ({
-    geminiApiKey: localStorage.getItem('gemini_api_key'),
-    googleApiKey: localStorage.getItem('google_api_key'),
-    googleCseId: localStorage.getItem('google_cse_id'),
-  });
-
   const sendMessage = async () => {
     const message = userInput.value.trim();
     if (!message) return;
@@ -383,10 +351,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          message,
-          apiKeys: getApiKeys() 
-        })
+        body: JSON.stringify({ message })
       });
       const data = await response.json();
       
@@ -419,10 +384,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const formData = new FormData();
     formData.append('file', file);
-    
-    // Append API keys to the form data
-    const apiKeys = getApiKeys();
-    formData.append('apiKeys', JSON.stringify(apiKeys));
 
     const tempMsgId = `temp-${Date.now()}`;
     appendMessage('model', `Menganalisis file: ${file.name}...`, false);
@@ -487,7 +448,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  loadSettings();
   loadInitialData();
 
   // Set initial sidebar state for large screens

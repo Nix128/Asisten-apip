@@ -1,11 +1,12 @@
 const axios = require('axios');
 
 // 🔹 Fungsi kirim ke Gemini
-async function sendToGemini(chatHistory, fileContext, apiKeys, tools = null) {
+async function sendToGemini(chatHistory, fileContext, tools = null) {
   try {
-    const geminiApiKey = apiKeys?.geminiApiKey || process.env.GEMINI_API_KEY;
+    const geminiApiKey = process.env.GEMINI_API_KEY;
     if (!geminiApiKey) {
-      return { error: 'Kunci API Gemini tidak ditemukan. Silakan masukkan di Pengaturan.' };
+      // This error will now primarily be seen in local development if .env is missing.
+      return { error: 'Kunci API Gemini tidak diatur di environment variables.' };
     }
     // Get current time in Jakarta timezone
     const now = new Date();
@@ -88,13 +89,13 @@ async function sendToGemini(chatHistory, fileContext, apiKeys, tools = null) {
 }
 
 // 🔎 Fungsi pencarian Google
-async function searchGoogle(query, apiKeys) {
+async function searchGoogle(query) {
   try {
-    const googleApiKey = apiKeys?.googleApiKey || process.env.GOOGLE_API_KEY;
-    const googleCseId = apiKeys?.googleCseId || process.env.GOOGLE_CSE_ID;
+    const googleApiKey = process.env.GOOGLE_API_KEY;
+    const googleCseId = process.env.GOOGLE_CSE_ID;
 
     if (!googleApiKey || !googleCseId) {
-        return 'Pencarian Google tidak dikonfigurasi. Kunci API atau CSE ID tidak ada.';
+        return 'Pencarian Google tidak dikonfigurasi di environment variables.';
     }
 
     const res = await axios.get('https://www.googleapis.com/customsearch/v1', {
