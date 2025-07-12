@@ -272,7 +272,9 @@ document.addEventListener('DOMContentLoaded', () => {
         renderHistoryList();
         renderCurrentChat();
         if (window.innerWidth <= 768) sidebar.classList.remove('show');
+        return data.newChatId; // Return the new ID
       }
+      return null;
     } catch (error) {
       console.error('Error starting new chat:', error);
       // Show an error message to the user
@@ -354,7 +356,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const sendMessage = async () => {
     const message = userInput.value.trim();
-    if (!message || !currentChatId) return;
+    if (!message) return;
+
+    let chatId = currentChatId;
+
+    // If there's no active chat, create one first
+    if (!chatId) {
+      chatId = await startNewChat();
+      if (!chatId) {
+        appendMessage('model', '⚠️ Gagal memulai percakapan baru. Silakan periksa pengaturan API Anda dan coba lagi.', false);
+        return;
+      }
+    }
 
     const welcomeMessage = chatWindow.querySelector('.welcome-message');
     if (welcomeMessage) {
@@ -460,12 +473,12 @@ document.addEventListener('DOMContentLoaded', () => {
       renderHistoryList();
       renderCurrentChat();
 
-      // Jika tidak ada chat yang aktif, mulai yang baru
+      // Jika tidak ada chat yang aktif, tampilkan pesan selamat datang
       if (!currentChatId) {
-        await startNewChat();
-      } else {
-        setChatInputDisabled(false); // Enable input if chat already exists
+        showWelcomeMessage();
       }
+      // We no longer auto-start a chat. The user will trigger it.
+      setChatInputDisabled(false); // Always enable the input
     } catch (error) {
       console.error('Error loading initial data:', error);
       showWelcomeMessage();
