@@ -186,8 +186,36 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const renderHistoryList = () => {
-    // Disabled for debugging
-    historyList.innerHTML = '<p class="empty-history">Riwayat dinonaktifkan untuk tes.</p>';
+    historyList.innerHTML = '';
+    if (Object.keys(chats).length === 0) {
+      historyList.innerHTML = '<p class="empty-history">Tidak ada riwayat.</p>';
+      return;
+    }
+    
+    Object.entries(chats).forEach(([id, chat]) => {
+      const item = document.createElement('div');
+      item.className = `history-item ${id === currentChatId ? 'active' : ''}`;
+      item.dataset.id = id;
+      item.innerHTML = `
+        <span class="history-title">${chat.name}</span>
+        <div class="history-actions">
+          <i class="fa-solid fa-pen-to-square edit-btn" title="Ubah Nama"></i>
+          <i class="fa-solid fa-trash delete-btn" title="Hapus"></i>
+        </div>
+      `;
+      
+      item.querySelector('.history-title').addEventListener('click', () => switchChat(id));
+      item.querySelector('.edit-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        renameChat(id);
+      });
+      item.querySelector('.delete-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        deleteChat(id);
+      });
+
+      historyList.appendChild(item);
+    });
   };
 
   const getGreeting = () => {
@@ -209,17 +237,86 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const startNewChat = async () => {
-    // Disabled for debugging
-    chatWindow.innerHTML = '';
-    showWelcomeMessage();
-    return 'temp-chat';
+    try {
+      const response = await fetch('/api/chat/new', { method: 'POST' });
+      const data = await response.json();
+      if (data.success) {
+        chats = data.chats;
+        currentChatId = data.newChatId;
+        renderHistoryList();
+        renderCurrentChat();
+        if (window.innerWidth <= 768) sidebar.classList.remove('show');
+        return data.newChatId; // Return the new ID
+      }
+      return null;
+    } catch (error) {
+      console.error('Error starting new chat:', error);
+      // Show an error message to the user
+      appendMessage('model', '⚠️ Gagal memulai percakapan baru. Silakan coba lagi.', false);
+    } finally {
+      // Always enable the input after attempting to start a new chat
+      setChatInputDisabled(false);
+    }
   };
 
-  const switchChat = async (chatId) => { /* Disabled for debugging */ };
+  const switchChat = async (chatId) => {
+    if (chatId === currentChatId) return;
+    try {
+      const response = await fetch('/api/chat/switch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chatId })
+      });
+      const data = await response.json();
+      if (data.success) {
+        currentChatId = data.currentChatId;
+        renderHistoryList();
+        renderCurrentChat();
+        if (window.innerWidth <= 768) sidebar.classList.remove('show');
+      }
+    } catch (error) {
+      console.error('Error switching chat:', error);
+    }
+  };
 
-  const renameChat = async (chatId) => { /* Disabled for debugging */ };
+  const renameChat = async (chatId) => {
+    const chat = chats[chatId];
+    if (!chat) return;
+    const newName = prompt('Masukkan nama baru untuk percakapan ini:', chat.name);
+    if (newName && newName.trim() !== '') {
+      try {
+        const response = await fetch(`/api/chat/${chatId}/rename`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ newName: newName.trim() })
+        });
+        const data = await response.json();
+        if (data.success) {
+          chats = data.chats;
+          renderHistoryList();
+        }
+      } catch (error) {
+        console.error('Error renaming chat:', error);
+      }
+    }
+  };
 
-  const deleteChat = async (chatId) => { /* Disabled for debugging */ };
+  const deleteChat = async (chatId) => {
+    if (confirm('Apakah Anda yakin ingin menghapus percakapan ini?')) {
+      try {
+        const response = await fetch(`/api/chat/${chatId}`, { method: 'DELETE' });
+        const data = await response.json();
+        if (data.success) {
+          chats = data.chats;
+          currentChatId = data.currentChatId;
+          renderHistoryList();
+          renderCurrentChat();
+        }
+      } catch (error) {
+        console.error('Error deleting chat:', error);
+      }
+    }
+  };
 
   const showTyping = (isTyping) => {
     typingIndicator.style.display = isTyping ? 'flex' : 'none';
@@ -228,6 +325,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const sendMessage = async () => {
     const message = userInput.value.trim();
     if (!message) return;
+
+    let chatId = currentChatId;
+
+    // If there's no active chat, create one first
+    if (!chatId) {
+      chatId = await startNewChat();
+      if (!chatId) {
+        appendMessage('model', '⚠️ Gagal memulai percakapan baru. Silakan periksa pengaturan API Anda dan coba lagi.', false);
+        return;
+      }
+    }
 
     const welcomeMessage = chatWindow.querySelector('.welcome-message');
     if (welcomeMessage) {
@@ -238,7 +346,7 @@ document.addEventListener('DOMContentLoaded', () => {
     userInput.value = '';
     showTyping(true);
 
-    // No history is saved on the client for this test
+    chats[currentChatId].history.push({ role: 'user', parts: [{ text: message }] });
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -250,7 +358,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (data.error) {
         await appendMessage('model', data.error, true);
       } else {
-        // No history is saved on the client for this test
+        const part = { text: data.response, documentData: data.documentData };
+        chats[currentChatId].history.push({ role: 'model', parts: [part] });
         await appendMessage('model', data.response, true, data.documentData);
       }
 
@@ -313,15 +422,33 @@ document.addEventListener('DOMContentLoaded', () => {
   fileUpload.addEventListener('change', handleFileUpload);
 
   // --- INITIALIZATION ---
-  const initializeApp = () => {
-    // In this debug version, we just show the welcome message and enable the input.
-    showWelcomeMessage();
-    renderHistoryList(); // Will show the disabled message
-    setChatInputDisabled(false);
-    currentChatId = 'temp-chat'; // Set a dummy ID to allow sending messages
+  const loadInitialData = async () => {
+    try {
+      const response = await fetch('/api/chat/sessions');
+      if (!response.ok) {
+        throw new Error(`Server responded with status: ${response.status}`);
+      }
+      const data = await response.json();
+      chats = data.chats;
+      currentChatId = data.currentChatId;
+      renderHistoryList();
+      renderCurrentChat();
+
+      // Jika tidak ada chat yang aktif, tampilkan pesan selamat datang
+      if (!currentChatId) {
+        showWelcomeMessage();
+      }
+      // We no longer auto-start a chat. The user will trigger it.
+      setChatInputDisabled(false); // Always enable the input
+    } catch (error) {
+      console.error('Error loading initial data:', error);
+      showWelcomeMessage();
+      appendMessage('model', '⚠️ Gagal memuat sesi chat. Periksa koneksi server dan coba muat ulang halaman.', false);
+      setChatInputDisabled(true); // Keep disabled on critical error
+    }
   };
 
-  initializeApp();
+  loadInitialData();
 
   // Set initial sidebar state for large screens
   if (window.innerWidth > 768) {

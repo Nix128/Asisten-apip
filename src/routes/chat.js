@@ -4,48 +4,43 @@ const { sendToGemini, searchGoogle } = require("../utils/sendToAI");
 const { findRelevantKnowledge } = require("../utils/knowledge");
 const { checkAndIncrementQuota } = require("../utils/quota");
 
-// --- TEMPORARY DEBUGGING STATE (NO SESSIONS) ---
-let tempHistory = [];
-let tempFileContext = [];
-// --- END TEMPORARY DEBUGGING STATE ---
-
-
 // Middleware to initialize chat structure
-// router.use((req, res, next) => {
-//   if (!req.session.chats) {
-//     req.session.chats = {};
-//     const initialChatId = `chat-${Date.now()}`;
-//     req.session.chats[initialChatId] = {
-//       name: "Percakapan Baru",
-//       history: [],
-//     };
-//     req.session.currentChatId = initialChatId;
-//   }
-//   next();
-// });
+router.use((req, res, next) => {
+  if (!req.session.chats) {
+    req.session.chats = {};
+    const initialChatId = `chat-${Date.now()}`;
+    req.session.chats[initialChatId] = {
+      name: "Percakapan Baru",
+      history: [],
+    };
+    req.session.currentChatId = initialChatId;
+  }
+  next();
+});
 
 // GET all chat sessions
 router.get("/sessions", (req, res) => {
-  // Return a dummy response as sessions are disabled
   res.json({
-    chats: { 'temp-chat': { name: 'Temporary Chat', history: [] } },
-    currentChatId: 'temp-chat',
+    chats: req.session.chats,
+    currentChatId: req.session.currentChatId,
   });
 });
 
 // POST a new message to the current chat
 router.post("/", async (req, res) => {
   const { message } = req.body;
-  // Using temporary state instead of session
-  const fileContext = tempFileContext; 
+  const { currentChatId, chats, fileContext } = req.session;
 
   if (!message) {
     return res.status(400).json({ response: "⚠️ Tidak ada pesan yang dikirim." });
   }
-  
+  if (!currentChatId || !chats[currentChatId]) {
+    return res.status(400).json({ response: "⚠️ Sesi chat tidak valid." });
+  }
+
   try {
-    // Using temporary state instead of session
-    tempHistory.push({ role: 'user', parts: [{ text: message }] });
+    const currentChat = chats[currentChatId];
+    currentChat.history.push({ role: 'user', parts: [{ text: message }] });
 
     // Define the specialized tools for APIP
     const tools = [{
@@ -68,15 +63,15 @@ router.post("/", async (req, res) => {
             "required": ["ringkasan_kasus"]
           }
         },
-        // {
-        //   "name": "search_google",
-        //   "description": "Gunakan fungsi ini jika Anda tidak dapat menemukan jawaban di basis pengetahuan internal dan memerlukan informasi eksternal dari internet, seperti peraturan terbaru, berita, atau data harga pasar.",
-        //   "parameters": {
-        //     "type": "OBJECT",
-        //     "properties": { "query": { "type": "STRING", "description": "Kueri pencarian yang jelas dan ringkas untuk Google." } },
-        //     "required": ["query"]
-        //   }
-        // },
+        {
+          "name": "search_google",
+          "description": "Gunakan fungsi ini jika Anda tidak dapat menemukan jawaban di basis pengetahuan internal dan memerlukan informasi eksternal dari internet, seperti peraturan terbaru, berita, atau data harga pasar.",
+          "parameters": {
+            "type": "OBJECT",
+            "properties": { "query": { "type": "STRING", "description": "Kueri pencarian yang jelas dan ringkas untuk Google." } },
+            "required": ["query"]
+          }
+        },
         {
           "name": "buat_dokumen_laporan",
           "description": "Gunakan fungsi ini SETELAH Anda menghasilkan teks lengkap untuk sebuah laporan, program kerja, atau dokumen formal lainnya. Fungsi ini akan mengubah teks tersebut menjadi format yang dapat diunduh oleh pengguna.",
@@ -94,7 +89,7 @@ router.post("/", async (req, res) => {
 
     // --- Agentic Loop for APIP ---
     console.log("Asking model to decide on a tool for APIP analysis...");
-    const firstResponse = await sendToGemini(tempHistory, fileContext, tools);
+    const firstResponse = await sendToGemini(currentChat.history, fileContext, tools);
 
     if (firstResponse.error) {
       return res.status(500).json({ response: firstResponse.error });
@@ -147,7 +142,7 @@ router.post("/", async (req, res) => {
         // We send this structured data as the final response, bypassing the second AI call.
         // The frontend will know how to render this.
         const finalResponse = `Dokumen "${functionArgs.judul_dokumen}" siap untuk diunduh.\n\n${functionArgs.konten_lengkap}`;
-        tempHistory.push({ role: 'model', parts: [{ text: finalResponse, documentData: docData }] });
+        currentChat.history.push({ role: 'model', parts: [{ text: finalResponse, documentData: docData }] });
         return res.json({ response: finalResponse, documentData: docData });
       }
 
@@ -156,11 +151,11 @@ router.post("/", async (req, res) => {
         parts: [{ functionResponse: { name: functionName, response: { content: toolResultContent } } }]
       };
 
-      tempHistory.push(candidate);
-      tempHistory.push(toolResult);
+      currentChat.history.push(candidate);
+      currentChat.history.push(toolResult);
 
       console.log("Sending tool result back to model for final synthesis...");
-      const secondResponse = await sendToGemini(tempHistory, fileContext);
+      const secondResponse = await sendToGemini(currentChat.history, fileContext);
       finalResponse = secondResponse.content?.parts?.[0]?.text || "Maaf, terjadi kesalahan saat mensintesis hasil analisis.";
 
     } else {
@@ -168,12 +163,11 @@ router.post("/", async (req, res) => {
       finalResponse = candidate?.parts?.[0]?.text || "Maaf, saya tidak dapat memproses permintaan Anda saat ini.";
     }
 
-    tempHistory.push({ role: 'model', parts: [{ text: finalResponse }] });
+    currentChat.history.push({ role: 'model', parts: [{ text: finalResponse }] });
 
     const historyLimit = 20;
-    if (tempHistory.length > historyLimit) {
-      // Keep history trimmed
-      tempHistory = tempHistory.slice(tempHistory.length - historyLimit);
+    if (currentChat.history.length > historyLimit) {
+      currentChat.history = currentChat.history.slice(currentChat.history.length - historyLimit);
     }
 
     res.json({ response: finalResponse });
@@ -186,15 +180,75 @@ router.post("/", async (req, res) => {
 
 // POST to create a new chat session
 router.post("/new", (req, res) => {
-  // Reset temporary history for this test
-  tempHistory = [];
+  const newChatId = `chat-${Date.now()}`;
+  req.session.chats[newChatId] = {
+    name: "Percakapan Baru",
+    history: [],
+  };
+  req.session.currentChatId = newChatId;
   res.json({
     success: true,
-    newChatId: 'temp-chat',
-    chats: { 'temp-chat': { name: 'Temporary Chat', history: [] } },
+    newChatId: req.session.currentChatId,
+    chats: req.session.chats,
   });
 });
 
-// All other routes are disabled for this test as they rely on sessions
+// POST to switch the current chat session
+router.post("/switch", (req, res) => {
+  const { chatId } = req.body;
+  if (req.session.chats[chatId]) {
+    req.session.currentChatId = chatId;
+    res.json({ success: true, currentChatId: chatId });
+  } else {
+    res.status(404).json({ success: false, message: "Chat tidak ditemukan." });
+  }
+});
+
+// DELETE a chat session
+router.delete("/:chatId", (req, res) => {
+  const { chatId } = req.params;
+  if (req.session.chats[chatId]) {
+    delete req.session.chats[chatId];
+
+    // If the deleted chat was the current one, switch to another or create a new one
+    if (req.session.currentChatId === chatId) {
+      const remainingChatIds = Object.keys(req.session.chats);
+      if (remainingChatIds.length > 0) {
+        req.session.currentChatId = remainingChatIds[0];
+      } else {
+        // If no chats are left, create a new one
+        const newChatId = `chat-${Date.now()}`;
+        req.session.chats[newChatId] = { name: "Percakapan Baru", history: [] };
+        req.session.currentChatId = newChatId;
+      }
+    }
+    res.json({ success: true, chats: req.session.chats, currentChatId: req.session.currentChatId });
+  } else {
+    res.status(404).json({ success: false, message: "Chat tidak ditemukan." });
+  }
+});
+
+// PUT to rename a chat session
+router.put("/:chatId/rename", (req, res) => {
+  const { chatId } = req.params;
+  const { newName } = req.body;
+
+  if (!newName || newName.trim() === "") {
+    return res.status(400).json({ success: false, message: "Nama baru tidak boleh kosong." });
+  }
+
+  if (req.session.chats[chatId]) {
+    req.session.chats[chatId].name = newName;
+    res.json({ success: true, chats: req.session.chats });
+  } else {
+    res.status(404).json({ success: false, message: "Chat tidak ditemukan." });
+  }
+});
+
+// Endpoint to clear file context (if needed)
+router.post("/reset", (req, res) => {
+  req.session.fileContext = null;
+  res.json({ success: true, message: "Konteks file direset." });
+});
 
 module.exports = router;
