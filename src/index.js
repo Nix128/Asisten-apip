@@ -20,10 +20,12 @@ app.use(session({
 
 // ROUTES
 const apiRoutes = require('./routes/index');
+const multer = require('multer'); // Import multer to check for its errors
 
 // MIDDLEWARE
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Increase payload limits to handle larger files and data
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // API ROUTES
@@ -33,6 +35,32 @@ app.use('/api', apiRoutes);
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
+
+// GLOBAL ERROR HANDLING MIDDLEWARE
+// This must be the last 'app.use()'
+app.use((err, req, res, next) => {
+  console.error("💥 Global Error Handler Caught:", err);
+
+  // Check if the error is from Multer (e.g., file too large)
+  if (err instanceof multer.MulterError) {
+    return res.status(400).json({
+      success: false,
+      error: `Kesalahan unggah file: ${err.message}. Pastikan file tidak melebihi 100MB.`
+    });
+  }
+
+  // Handle other errors
+  // Ensure we always send a JSON response
+  if (res.headersSent) {
+    return next(err);
+  }
+  
+  res.status(500).json({
+    success: false,
+    error: 'Terjadi kesalahan internal pada server: ' + (err.message || 'Error tidak diketahui')
+  });
+});
+
 
 // SERVER
 const PORT = process.env.PORT || 3001;
