@@ -71,8 +71,55 @@ async function findRelevantKnowledge(query, topK = 3) {
   }
 }
 
+/**
+ * Creates an embedding for a text and stores it in the knowledge base.
+ * @param {string} topic - The topic or filename for the content.
+ * @param {string} content - The text content to learn.
+ * @returns {Promise<void>}
+ */
+async function learnContent(topic, content) {
+  try {
+    if (!topic || !content) {
+      console.warn("Skipping learning: topic or content is empty.");
+      return;
+    }
+
+    const knowledgeCollection = await getKnowledgeCollection();
+    
+    console.log(`Learning content for topic: "${topic}"...`);
+    const embedding = await getEmbedding(content);
+
+    if (!embedding) {
+      throw new Error('Failed to create text embedding for learning.');
+    }
+
+    // Using updateOne with upsert is a robust way to add or replace knowledge
+    await knowledgeCollection.updateOne(
+      { topic: topic }, // Find document by topic
+      {
+        $set: {
+          text: content,
+          embedding: embedding,
+          updatedAt: new Date()
+        },
+        $setOnInsert: { // Set createdAt only if it's a new document
+          createdAt: new Date()
+        }
+      },
+      { upsert: true } // Create the document if it doesn't exist
+    );
+
+    console.log(`Successfully learned and stored knowledge for topic: "${topic}".`);
+
+  } catch (error) {
+    console.error(`❌ Error in learnContent for topic "${topic}":`, error);
+    // We don't re-throw here to avoid crashing the entire analysis if only learning fails.
+  }
+}
+
 module.exports = {
   getKnowledgeCollection,
   findRelevantKnowledge,
-  getEmbedding // Re-export for convenience
+  getEmbedding, // Re-export for convenience
+  learnContent
 };

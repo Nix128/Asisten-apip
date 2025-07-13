@@ -2,15 +2,20 @@ require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const session = require('express-session');
+const MongoStore = require('connect-mongo');
 const app = express();
 
 // SESSION MIDDLEWARE
-// Using express-session without a store defaults to MemoryStore,
-// which is fine for serverless as it still sets the cookie correctly.
+// Switched to MongoStore for persistent sessions, crucial for serverless environments.
 app.use(session({
   secret: process.env.SESSION_SECRET || 'a-very-secret-key-that-is-long-enough',
   resave: false,
-  saveUninitialized: true,
+  saveUninitialized: false, // Set to false as we don't want to save empty sessions
+  store: MongoStore.create({
+    mongoUrl: process.env.DATABASE_URL,
+    collectionName: 'sessions', // Optional: name of the collection for sessions
+    ttl: 14 * 24 * 60 * 60 // = 14 days. Default
+  }),
   cookie: { 
     secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
     httpOnly: true,

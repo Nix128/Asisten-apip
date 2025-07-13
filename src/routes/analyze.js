@@ -9,7 +9,7 @@ const readTxt = require('../utils/readTxt');
 const readExcel = require('../utils/readExcel');
 const extractZip = require('../utils/extractZip');
 const { analyzeImageWithVision } = require('../utils/sendToAI');
-// Note: upsertKnowledge is removed as knowledge is now added via the dedicated knowledge base UI.
+const { learnContent } = require('../utils/knowledge');
 
 const router = express.Router();
 
@@ -66,8 +66,9 @@ router.post('/', upload.single('file'), async (req, res) => {
       content: content
     });
 
-    // The content is now in the session context for immediate analysis.
-    // Permanent learning is handled via the dedicated Knowledge Base page.
+    // Also learn the content permanently in the background.
+    // We don't await this so the user gets a faster response.
+    learnContent(file.originalname, content);
 
     const documentList = req.session.fileContext.map(doc => doc.name).join(', ');
     res.json({ 
