@@ -24,7 +24,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- API FUNCTIONS ---
   const fetchKnowledge = async () => {
     try {
-      const response = await fetch('/api/knowledge');
+      // Add cache: 'no-cache' to ensure we always get the latest data from the server
+      const response = await fetch('/api/knowledge', { cache: 'no-cache' });
       if (!response.ok) throw new Error('Failed to fetch knowledge base.');
       const data = await response.json();
       allKnowledge = data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
