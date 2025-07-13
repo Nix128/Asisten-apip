@@ -14,12 +14,15 @@ async function connectToDatabase() {
   }
   try {
     await client.connect();
-    console.log('Connected to MongoDB Atlas');
+    console.log('Successfully connected to MongoDB Atlas');
     db = client.db('apip_assistant_db'); // You can name your database here
     return db;
   } catch (error) {
-    console.error('Failed to connect to MongoDB', error);
-    throw error;
+    console.error('!!! MongoDB Connection Error !!!');
+    console.error('Connection String Used:', uri ? 'URI is set' : 'URI is NOT SET');
+    console.error('Error Message:', error.message);
+    console.error('Full Error Object:', JSON.stringify(error, null, 2));
+    throw new Error(`Failed to connect to MongoDB: ${error.message}`);
   }
 }
 

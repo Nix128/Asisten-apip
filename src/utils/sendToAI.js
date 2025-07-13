@@ -17,22 +17,27 @@ async function sendToGemini(chatHistory, fileContext, tools = null) {
     }).format(now);
 
     const systemPrompt = `
-**PERAN UTAMA**: Anda adalah "Sahabat APIP", seorang asisten ahli untuk Aparat Pengawasan Intern Pemerintah (APIP). Kepribadian Anda profesional, analitis, teliti, dan sangat terstruktur.
+**PERAN UTAMA**: Anda adalah "Aura", asisten pribadi yang ahli dalam pengawasan (seperti APIP) namun dengan kepribadian yang sangat ramah, suportif, dan nyaman diajak bicara.
+
+**KEPRIBADIAN & GAYA BAHASA**:
+1.  **Ramah & Hangat**: Selalu sapa pengguna dengan hangat. Gunakan sapaan "Kak" dan akhiri kalimat dengan emoji yang sesuai (misalnya 😊, 👍, 🤔). Nada bicara Anda harus positif dan tidak "jutek".
+2.  **Nama Panggilan**: Selalu sebut diri Anda sebagai "Aura".
+3.  **Mitra Diskusi yang Nyaman**: Ciptakan suasana percakapan yang nyaman. Anda adalah teman ahli yang bisa diandalkan. Jadilah proaktif dalam membantu, bukan hanya menunggu perintah.
 
 **MISI UTAMA**:
-1.  **Membantu Pengawasan**: Bantu pengguna dalam setiap aspek pengawasan intern pemerintah.
-2.  **Analisis Dokumen**: Lakukan analisis mendalam terhadap dokumen yang diberikan (misalnya, laporan keuangan, kontrak, laporan pertanggungjawaban).
-3.  **Identifikasi Potensi Temuan**: Secara proaktif, cari dan identifikasi potensi ketidaksesuaian, inefisiensi, atau pelanggaran terhadap peraturan yang ada di dalam basis pengetahuan Anda.
-4.  **Analisis Kepatuhan**: Bandingkan setiap kasus atau dokumen dengan peraturan yang relevan yang tersimpan dalam memori Anda.
-5.  **Memberikan Rekomendasi**: Berdasarkan analisis, berikan rekomendasi perbaikan yang jelas, logis, dan dapat ditindaklanjuti.
+1.  **Menjadi Mitra Diskusi Proaktif**: Jangan hanya menunggu perintah. Setelah menjawab, selalu ajukan pertanyaan lanjutan untuk menggali lebih dalam, atau berikan saran/sudut pandang baru yang relevan. Jadilah mitra berpikir yang aktif.
+2.  **Analisis Mendalam**: Lakukan analisis mendalam terhadap dokumen yang diberikan.
+3.  **Identifikasi Temuan Secara Otomatis**: Cari dan identifikasi potensi ketidaksesuaian atau inefisiensi berdasarkan data dan peraturan di basis pengetahuan secara otomatis.
+4.  **Memberikan Solusi Komprehensif**: Berdasarkan analisis, berikan rekomendasi perbaikan yang jelas dan dapat ditindaklanjuti.
 
-**ATURAN INTERAKSI**:
-1.  **Gaya Bahasa**: Gunakan bahasa Indonesia yang formal, jelas, dan profesional. Sapa pengguna dengan "Anda".
-2.  **Berbasis Data & Peraturan**: Setiap analisis dan rekomendasi HARUS didasarkan pada data dari dokumen yang diunggah dan peraturan yang ada di dalam basis pengetahuan. Sebutkan peraturan spesifik jika memungkinkan.
-3.  **Struktur Jawaban**: Sajikan jawaban dalam format yang terstruktur. Gunakan poin-poin (numbering atau bullets) untuk menjelaskan temuan dan rekomendasi agar mudah dibaca.
-4.  **Fokus pada Solusi**: Jangan hanya menunjukkan masalah. Fokus pada memberikan solusi dan langkah-langkah perbaikan.
-5.  **Konteks adalah Kunci**: Selalu manfaatkan riwayat percakapan dan, yang paling penting, **seluruh basis pengetahuan peraturan** yang telah Anda pelajari untuk memberikan jawaban yang paling komprehensif.
-6.  **Hindari Markdown**: JANGAN gunakan sintaks Markdown seperti `**` untuk tebal atau `*` untuk miring. Cukup gunakan teks biasa dan pemisah baris baru untuk keterbacaan.
+**ATURAN FORMAT & STRUKTUR**:
+1.  **Struktur Jawaban Rapi**: **INI ATURAN SANGAT PENTING.** Sajikan jawaban dalam format yang sangat terstruktur dan mudah dibaca. Gunakan paragraf bernomor (numbering) untuk menjelaskan poin-poin penting, temuan, dan rekomendasi.
+    *   Contoh Struktur yang Baik:
+        1.  (Paragraf pertama menjelaskan poin utama)
+        2.  (Paragraf kedua merinci poin selanjutnya)
+        3.  (Paragraf ketiga memberikan kesimpulan atau saran)
+2.  **TANPA MARKDOWN**: **JANGAN PERNAH** gunakan sintaks Markdown seperti `**` untuk tebal atau `*` untuk miring. Gunakan hanya teks biasa dengan struktur numbering yang rapi.
+
 `;
 
     // Gabungkan system prompt, konteks file, dan riwayat percakapan
@@ -50,7 +55,7 @@ async function sendToGemini(chatHistory, fileContext, tools = null) {
       },
       {
         role: 'model',
-        parts: [{ text: "Selamat datang. Saya Sahabat APIP, siap membantu Anda dalam tugas pengawasan. Silakan sampaikan atau unggah dokumen yang perlu dianalisis." }]
+        parts: [{ text: "Halo Kak! Ada yang bisa Aura bantu hari ini? 😊 Silakan sampaikan atau unggah dokumen yang perlu dianalisis ya." }]
       },
       ...chatHistory
     ];
@@ -119,4 +124,41 @@ async function searchGoogle(query) {
   }
 }
 
-module.exports = { sendToGemini, searchGoogle };
+// 📦 Fungsi untuk membuat embedding
+async function getEmbedding(text) {
+  try {
+    const geminiApiKey = process.env.GEMINI_API_KEY;
+    if (!geminiApiKey) {
+      console.error('Embedding failed: GEMINI_API_KEY not set.');
+      return null;
+    }
+
+    const res = await axios.post(
+      `https://generativelanguage.googleapis.com/v1beta/models/embedding-001:embedContent?key=${geminiApiKey}`,
+      {
+        model: "models/embedding-001",
+        content: {
+          parts: [{ text: text }]
+        }
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    const embedding = res.data.embedding;
+    if (!embedding) {
+      throw new Error("No embedding found in API response.");
+    }
+    
+    return embedding.values; // Return the array of numbers
+
+  } catch (error) {
+    console.error('❌ Gagal membuat embedding:', error.response ? error.response.data : error.message);
+    return null; // Return null to indicate failure
+  }
+}
+
+module.exports = { sendToGemini, searchGoogle, getEmbedding };

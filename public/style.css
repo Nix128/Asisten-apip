@@ -459,24 +459,112 @@ body {
 }
 
 /* --- RESPONSIVE DESIGN --- */
+
+/* For very large screens, constrain the main content width for readability */
+@media (min-width: 1440px) {
+  .main-chat {
+    max-width: 1100px;
+    margin: 0 auto;
+    border-left: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-color);
+  }
+}
+
+/* For tablets and small desktops */
+@media (max-width: 1024px) {
+  .sidebar {
+    width: 240px;
+  }
+  .app-container.sidebar-collapsed .sidebar {
+    margin-left: -240px;
+  }
+  .chat-header, .chat-footer {
+    padding: 0.75rem 1rem;
+  }
+  .chat-window {
+    padding: 1rem;
+  }
+}
+
+
+/* For mobile devices */
 @media (max-width: 768px) {
   html {
-    font-size: 14px; /* Scale down all rem units on smaller screens */
+    font-size: 15px; /* Slightly increase base font for mobile readability */
+  }
+
+  body {
+    overflow: auto; /* Allow scrolling on the body for smaller screens */
+  }
+
+  .app-container {
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
   }
 
   .sidebar {
-    position: absolute;
+    position: fixed; /* Use fixed positioning for overlay effect */
+    top: 0;
+    left: 0;
     height: 100%;
     transform: translateX(-100%);
     transition: transform 0.3s ease-in-out;
     box-shadow: 4px 0 15px rgba(0,0,0,0.2);
+    width: 280px; /* Give it a bit more space on mobile */
   }
+
   .sidebar.show {
     transform: translateX(0);
   }
+
   /* On small screens, the main content doesn't move */
   .app-container.sidebar-collapsed .sidebar {
     margin-left: 0;
+  }
+
+  .main-chat {
+    width: 100%;
+    height: 100vh; /* Ensure chat takes full viewport height */
+  }
+
+  .chat-header, .chat-footer {
+    padding: 0.5rem 1rem;
+  }
+
+  .chat-window {
+    padding: 1rem 0.75rem;
+  }
+
+  .message {
+    max-width: 90%; /* Allow messages to take a bit more width */
+  }
+
+  .welcome-message h2 {
+    font-size: 1.5rem;
+  }
+
+  .welcome-message p {
+    font-size: 0.95rem;
+  }
+  
+  /* Add an overlay to the main content when sidebar is open */
+  .content-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.4);
+    z-index: 99;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+  }
+
+  .sidebar.show + .main-chat .content-overlay {
+    opacity: 1;
+    visibility: visible;
   }
 }
 

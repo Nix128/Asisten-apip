@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const newChatBtn = document.getElementById('new-chat-btn');
   const historyList = document.getElementById('history-list');
   const mainChat = document.querySelector('.main-chat');
+  const contentOverlay = document.querySelector('.content-overlay');
 
   // --- STATE MANAGEMENT ---
   let chats = {};
@@ -44,7 +45,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- SIDEBAR MANAGEMENT ---
   const handleMenuClick = () => {
     if (window.innerWidth <= 768) {
-      sidebar.classList.toggle('show');
+      const isShown = sidebar.classList.toggle('show');
+      // The overlay is part of the main-chat, so we don't need to toggle it separately.
+      // The CSS handles the overlay's visibility based on the sidebar's 'show' class.
     } else {
       appContainer.classList.toggle('sidebar-collapsed');
       // Save the state for large screens
@@ -57,8 +60,9 @@ document.addEventListener('DOMContentLoaded', () => {
     handleMenuClick();
   });
 
-  mainChat.addEventListener('click', () => {
-    if (window.innerWidth <= 768 && sidebar.classList.contains('show')) {
+  // Close sidebar when clicking the overlay on mobile
+  contentOverlay.addEventListener('click', () => {
+    if (sidebar.classList.contains('show')) {
       sidebar.classList.remove('show');
     }
   });
@@ -121,7 +125,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const senderDiv = document.createElement('div');
     senderDiv.className = 'sender';
-    senderDiv.textContent = role === 'user' ? 'Anda' : 'Sahabat APIP';
+    senderDiv.textContent = role === 'user' ? 'Anda' : 'Aura';
 
     const bubbleDiv = document.createElement('div');
     bubbleDiv.className = 'bubble';
@@ -229,9 +233,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const showWelcomeMessage = () => {
     chatWindow.innerHTML = `
       <div class="welcome-message">
-        <i class="fa-solid fa-shield-halved"></i>
-        <h2>Sahabat APIP</h2>
-        <p>Sistem Asisten Ahli untuk Aparat Pengawasan Intern Pemerintah. Ajukan pertanyaan atau mulai dengan mengunggah dokumen untuk dianalisis.</p>
+        <i class="fa-solid fa-hands-holding-circle"></i>
+        <h2>Aura</h2>
+        <p>Asisten pribadi Anda yang ramah dan ahli dalam pengawasan. Siap membantu kapan pun Anda butuhkan. 😊</p>
       </div>
     `;
   };

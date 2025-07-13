@@ -23,9 +23,16 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Topic and content are required.' });
     }
     
-    const knowledgeCollection = await getKnowledgeCollection();
     const { getEmbedding } = require('../utils/knowledge');
+    const knowledgeCollection = await getKnowledgeCollection();
+    
+    console.log(`Creating embedding for topic: "${topic}"...`);
     const embedding = await getEmbedding(content);
+
+    if (!embedding) {
+      return res.status(500).json({ error: 'Failed to create text embedding.' });
+    }
+    console.log('Embedding created successfully.');
 
     if (id) {
       // Update existing
@@ -41,7 +48,7 @@ router.post('/', async (req, res) => {
       await knowledgeCollection.insertOne({
         topic,
         text: content,
-        embedding,
+        embedding: embedding, // Ensure the field name is 'embedding'
         createdAt: new Date(),
       });
     }

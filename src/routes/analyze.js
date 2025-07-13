@@ -8,12 +8,16 @@ const readPDF = require('../utils/readPDF');
 const readTxt = require('../utils/readTxt');
 const readExcel = require('../utils/readExcel');
 const extractZip = require('../utils/extractZip');
-const { upsertKnowledge } = require('../utils/knowledge');
+// Note: upsertKnowledge is removed as knowledge is now added via the dedicated knowledge base UI.
 
 const router = express.Router();
 
 // Use memory storage to handle files in a serverless environment
-const upload = multer({ storage: multer.memoryStorage() });
+// and increase the file size limit to 100MB.
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 100 * 1024 * 1024 } // 100 MB
+});
 
 router.post('/', upload.single('file'), async (req, res) => {
   const file = req.file;
@@ -58,9 +62,8 @@ router.post('/', upload.single('file'), async (req, res) => {
       content: content
     });
 
-    // Learn the content permanently
-    await upsertKnowledge(file.originalname, content);
-    console.log(`Knowledge from "${file.originalname}" has been learned and stored.`);
+    // The content is now in the session context for immediate analysis.
+    // Permanent learning is handled via the dedicated Knowledge Base page.
 
     const documentList = req.session.fileContext.map(doc => doc.name).join(', ');
     res.json({ 

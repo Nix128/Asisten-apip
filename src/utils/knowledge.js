@@ -1,92 +1,78 @@
 const { connectToDatabase } = require('./database');
-const { v4: uuidv4 } = require('uuid');
+const { getEmbedding } = require('./sendToAI'); // Import the new embedding function
 
-// We still need the embedding and similarity logic locally
-async function getEmbedding(text) {
-  const words = text.toLowerCase().split(/\W+/).filter(w => w.length > 0);
-  const vector = {};
-  words.forEach(word => {
-    vector[word] = (vector[word] || 0) + 1;
-  });
-  return vector;
-}
-
-function cosineSimilarity(vecA, vecB) {
-    const terms = new Set([...Object.keys(vecA), ...Object.keys(vecB)]);
-    let dotProduct = 0;
-    let magA = 0;
-    let magB = 0;
-    for (const term of terms) {
-        const valA = vecA[term] || 0;
-        const valB = vecB[term] || 0;
-        dotProduct += valA * valB;
-        magA += valA * valA;
-        magB += valB * valB;
-    }
-    magA = Math.sqrt(magA);
-    magB = Math.sqrt(magB);
-
-    if (magA === 0 || magB === 0) return 0;
-    return dotProduct / (magA * magB);
-}
-
+/**
+ * Gets the MongoDB collection for the knowledge base.
+ * @returns {Promise<import('mongodb').Collection>}
+ */
 async function getKnowledgeCollection() {
   const db = await connectToDatabase();
   return db.collection('knowledge');
 }
 
-async function readKnowledgeBase() {
-  const knowledgeCollection = await getKnowledgeCollection();
-  return knowledgeCollection.find({}).toArray();
-}
-
-async function writeKnowledgeBase(data) {
-    // This function is now a proxy for bulk-inserting, though not used in the app.
-    // In a real scenario, you'd handle migrations or bulk inserts differently.
+/**
+ * Finds relevant knowledge base entries using MongoDB's Atlas Vector Search.
+ *
+ * @param {string} query - The user's query to search for.
+ * @param {number} [topK=3] - The number of top results to return.
+ * @returns {Promise<Array<Object>>} - A promise that resolves to an array of relevant knowledge entries with a 'score' field.
+ */
+async function findRelevantKnowledge(query, topK = 3) {
+  try {
     const knowledgeCollection = await getKnowledgeCollection();
-    await knowledgeCollection.deleteMany({});
-    if (data.length > 0) {
-        await knowledgeCollection.insertMany(data);
+
+    // 1. Create an embedding for the user's query.
+    const queryEmbedding = await getEmbedding(query);
+    if (!queryEmbedding) {
+      console.error("Failed to create query embedding. Aborting search.");
+      return [];
     }
-}
 
-async function upsertKnowledge(topic, newText) {
-  const knowledgeCollection = await getKnowledgeCollection();
-  const newEmbedding = await getEmbedding(newText);
-  
-  // For simplicity, we'll just add new knowledge. 
-  // A more robust system would check for duplicates.
-  const newEntry = {
-    _id: uuidv4(),
-    topic: topic,
-    text: newText,
-    embedding: newEmbedding,
-    createdAt: new Date(),
-  };
-  await knowledgeCollection.insertOne(newEntry);
-  console.log(`Knowledge for topic "${topic}" inserted into database.`);
-}
+    // 2. Define the Atlas Vector Search aggregation pipeline.
+    //    Make sure you have a search index named 'vector_index' on the 'knowledge' collection.
+    const pipeline = [
+      {
+        $vectorSearch: {
+          index: 'vector_index', // The name of your Atlas Search Index
+          path: 'embedding',     // The field in your documents that contains the vector
+          queryVector: queryEmbedding,
+          numCandidates: 100,    // Number of candidates to consider
+          limit: topK            // Number of top results to return
+        }
+      },
+      {
+        $project: {
+          _id: 1,
+          topic: 1,
+          text: 1,
+          createdAt: 1,
+          score: { $meta: 'vectorSearchScore' } // Project the search score
+        }
+      }
+    ];
 
-async function findRelevantKnowledge(query, topK = 1) {
-  const knowledgeBase = await readKnowledgeBase();
-  if (knowledgeBase.length === 0) return [];
+    // 3. Execute the search.
+    const results = await knowledgeCollection.aggregate(pipeline).toArray();
+    
+    console.log(`Vector search found ${results.length} relevant documents for query: "${query}"`);
+    return results;
 
-  const queryEmbedding = await getEmbedding(query);
-
-  const scoredKnowledge = knowledgeBase.map(item => ({
-    ...item,
-    score: cosineSimilarity(queryEmbedding, item.embedding)
-  }));
-
-  scoredKnowledge.sort((a, b) => b.score - a.score);
-  return scoredKnowledge.slice(0, topK);
+  } catch (error) {
+    console.error('❌ Error during vector search in findRelevantKnowledge:', error);
+    // If the error is about the index not existing, provide a helpful message.
+    if (error.message.includes('index not found')) {
+        console.error("---");
+        console.error("❗ HINT: The Atlas Vector Search index 'vector_index' might be missing.");
+        console.error("   Please create it in your MongoDB Atlas dashboard on the `Asisten-Pribadi.knowledge` collection.");
+        console.error("   Index configuration should be: { \"fields\": [ { \"type\": \"vector\", \"path\": \"embedding\", \"numDimensions\": 768, \"similarity\": \"cosine\" } ] }");
+        console.error("---");
+    }
+    return []; // Return empty array on error
+  }
 }
 
 module.exports = {
-  upsertKnowledge,
+  getKnowledgeCollection,
   findRelevantKnowledge,
-  getEmbedding,
-  readKnowledgeBase,
-  writeKnowledgeBase,
-  getKnowledgeCollection
+  getEmbedding // Re-export for convenience
 };
