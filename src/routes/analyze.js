@@ -8,6 +8,7 @@ const readPDF = require('../utils/readPDF');
 const readTxt = require('../utils/readTxt');
 const readExcel = require('../utils/readExcel');
 const extractZip = require('../utils/extractZip');
+const { analyzeImageWithVision } = require('../utils/sendToAI');
 // Note: upsertKnowledge is removed as knowledge is now added via the dedicated knowledge base UI.
 
 const router = express.Router();
@@ -39,6 +40,9 @@ router.post('/', upload.single('file'), async (req, res) => {
       content = await readTxt(buffer);
     } else if (ext === '.xlsx') {
       content = await readExcel(buffer);
+    } else if (['.png', '.jpg', '.jpeg', '.webp'].includes(ext)) {
+      const base64Image = buffer.toString('base64');
+      content = await analyzeImageWithVision(base64Image, file.mimetype);
     } else if (ext === '.zip') {
       // This is tricky, unzipper works with streams/paths. We need to write to a temp dir.
       // The /tmp/ directory is writable in most serverless environments.

@@ -161,4 +161,52 @@ async function getEmbedding(text) {
   }
 }
 
-module.exports = { sendToGemini, searchGoogle, getEmbedding };
+// 👁️ Fungsi untuk menganalisis gambar dengan Gemini Vision
+async function analyzeImageWithVision(base64ImageData, mimeType) {
+  try {
+    const geminiApiKey = process.env.GEMINI_API_KEY;
+    if (!geminiApiKey) {
+      return { error: 'Kunci API Gemini tidak diatur.' };
+    }
+
+    const requestBody = {
+      "contents": [
+        {
+          "parts": [
+            { "text": "Jelaskan isi dari gambar ini secara detail. Jika ini adalah dokumen atau tabel, ekstrak semua teks yang terlihat dengan rapi." },
+            {
+              "inline_data": {
+                "mime_type": mimeType,
+                "data": base64ImageData
+              }
+            }
+          ]
+        }
+      ],
+      "generationConfig": {
+        "temperature": 0.1,
+        "topK": 1,
+        "topP": 1,
+        "maxOutputTokens": 4096,
+      }
+    };
+
+    const res = await axios.post(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${geminiApiKey}`,
+      requestBody,
+      {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    return res.data.candidates?.[0]?.content?.parts?.[0]?.text || "Tidak dapat menganalisis gambar.";
+
+  } catch (error) {
+    console.error('❌ Gagal menganalisis gambar dengan Vision:', error.response ? error.response.data : error.message);
+    return "Maaf, terjadi kesalahan saat mengirim gambar ke AI.";
+  }
+}
+
+module.exports = { sendToGemini, searchGoogle, getEmbedding, analyzeImageWithVision };
